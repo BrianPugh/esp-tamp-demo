@@ -15,6 +15,7 @@
 #include "sdkconfig.h"
 
 #include "tamp/compressor.h"
+#include "tamp/decompressor.h"
 
 extern const uint8_t enwik8_100kb_start[] asm("_binary_enwik8_100kb_start");
 extern const uint8_t enwik8_100kb_end[]   asm("_binary_enwik8_100kb_end");
@@ -24,7 +25,7 @@ extern const uint8_t enwik8_100kb_tamp_end[]   asm("_binary_enwik8_100kb_tamp_en
 
 #define WINDOW_BITS 10
 
-uint8_t buffer[1 << WINDOW_BITS];
+uint8_t window_buffer[1 << WINDOW_BITS];
 uint8_t output_buffer[100000];
 
 void app_main(void)
@@ -54,6 +55,7 @@ void app_main(void)
         printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
     }
     {
+        /* COMPRESSION */
         size_t input_consumed_size, output_written_size;
         TampCompressor compressor;
         TampConf conf = {
@@ -62,7 +64,7 @@ void app_main(void)
             .use_custom_dictionary = false
         };
 
-        tamp_compressor_init(&compressor, &conf, buffer);
+        tamp_compressor_init(&compressor, &conf, window_buffer);
         start = esp_timer_get_time();
 
         tamp_compressor_compress_and_flush(
@@ -74,12 +76,38 @@ void app_main(void)
 
         end = esp_timer_get_time();
         printf("Compression Time (uS): %lld\n", end - start);
-        printf("Compression Size (bytes): %d\n", output_written_size);
+        printf("Compression Size (bytes): %zu\n", output_written_size);
         if(memcmp(output_buffer, enwik8_100kb_tamp_start, enwik8_100kb_tamp_end - enwik8_100kb_tamp_start)){
             printf("Unexpected compressed data.");
         }
         else{
             printf("Compressed to expected tamp data.\n");
+        }
+    }
+    {
+        /* DECOMPRESSION */
+        size_t input_consumed_size, output_written_size;
+        TampDecompressor decompressor;
+        tamp_decompressor_init(&decompressor, NULL, window_buffer);
+        start = esp_timer_get_time();
+        tamp_decompressor_decompress(
+                &decompressor,
+                output_buffer,
+                sizeof(output_buffer),
+                &output_written_size,
+                enwik8_100kb_tamp_start,
+                100000,
+                &input_consumed_size
+                );
+        end = esp_timer_get_time();
+        printf("Decompression Time (uS): %lld\n", end - start);
+        printf("Decompression Size (bytes): %zu\n", output_written_size);
+
+        if(memcmp(output_buffer, enwik8_100kb_start, 100000)){
+            printf("Unexpected decompressed data.");
+        }
+        else{
+            printf("Decompression successful.\n");
         }
     }
 
