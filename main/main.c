@@ -4,14 +4,15 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
-#include <stdio.h>
 #include <inttypes.h>
-#include "sdkconfig.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include <stdio.h>
+#include <string.h>
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "sdkconfig.h"
 
 #include "tamp/compressor.h"
 
@@ -74,6 +75,12 @@ void app_main(void)
         end = esp_timer_get_time();
         printf("Compression Time (uS): %lld\n", end - start);
         printf("Compression Size (bytes): %d\n", output_written_size);
+        if(memcmp(output_buffer, enwik8_100kb_tamp_start, enwik8_100kb_tamp_end - enwik8_100kb_tamp_start)){
+            printf("Unexpected compressed data.");
+        }
+        else{
+            printf("Compressed to expected tamp data.\n");
+        }
     }
 
 
