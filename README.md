@@ -23,4 +23,4 @@ All benchmarks were performed with esp-idf v5.1.2 on an ESP32 with default setti
 
 
 ### Acknowledgement
-All esp32-specific optimizations were implemented by @BitsForPeople in his [esp-tamp fork](https://github.com/BitsForPeople/esp-tamp/tree/main).
+All esp32-specific optimizations were implemented by [@BitsForPeople](https://github.com/BitsForPeople) in his [esp-tamp fork](https://github.com/BitsForPeople/esp-tamp/tree/main).

@@ -1,3 +1,0 @@
-[submodule "components/esp-tamp"]
-	path = components/esp-tamp
-	url = git@github.com:BitsForPeople/esp-tamp.git
