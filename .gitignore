@@ -3,3 +3,8 @@
 /sdkconfig.ci
 /sdkconfig.old
 .cache
+.DS_Store
+tamp.mpy
+dependencies.lock
+test.py
+/managed_components/

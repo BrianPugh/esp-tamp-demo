@@ -13,7 +13,7 @@ All benchmarks were performed with esp-idf v5.1.2 on an ESP32 with default setti
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
 | Default         | 5.750    | Baseline          |
-| ESP32-Optimized | 2.246    | 2.56x             |
+| ESP32-Optimized | 2.218    | 2.64x             |
 
 ### Decompression
 
