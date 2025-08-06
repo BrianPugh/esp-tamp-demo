@@ -10,7 +10,7 @@ idf.py -p /dev/tty.usbserial-0001 flash monitor
 This will compress the first 100KB of the enwik8 dataset and print the compression/decompression performance.
 
 # Performance
-All benchmarks were performed with esp-idf v5.1.2 on an ESP32 with default settings. Notably:
+All benchmarks were performed with esp-idf v5.4 on an ESP32 with default settings. Notably:
 
 * 160 MHz
 * DIO 2MB flash at 40MHz
@@ -19,14 +19,14 @@ All benchmarks were performed with esp-idf v5.1.2 on an ESP32 with default setti
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 5.750    | Baseline          |
-| ESP32-Optimized | 2.218    | 2.64x             |
+| Default         | 4.461    | Baseline          |
+| ESP32-Optimized | 2.045    | 2.18x             |
 
 ### Decompression
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 0.096    | Baseline          |
+| Default         | 0.093    | Baseline          |
 
 
 ### Acknowledgement
