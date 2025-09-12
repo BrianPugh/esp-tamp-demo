@@ -26,7 +26,8 @@ extern const uint8_t enwik8_100kb_tamp_end[]   asm("_binary_enwik8_100kb_tamp_en
 #define WINDOW_BITS 10
 
 uint8_t window_buffer[1 << WINDOW_BITS];
-uint8_t output_buffer[100000];
+uint8_t compressed_buffer[100000];
+uint8_t decompressed_buffer[100000];
 
 void app_main(void)
 {
@@ -54,6 +55,7 @@ void app_main(void)
                (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
         printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
     }
+    size_t compressed_size;
     {
         /* COMPRESSION */
         size_t input_consumed_size, output_written_size;
@@ -69,45 +71,100 @@ void app_main(void)
 
         tamp_compressor_compress_and_flush(
              &compressor,
-             output_buffer, sizeof(output_buffer), &output_written_size,
+             compressed_buffer, sizeof(compressed_buffer), &output_written_size,
              enwik8_100kb_start, 100000, &input_consumed_size,
              false
         );
 
         end = esp_timer_get_time();
+        compressed_size = output_written_size;
         printf("Compression Time (uS): %lld\n", end - start);
         printf("Compression Size (bytes): %zu\n", output_written_size);
-        if(memcmp(output_buffer, enwik8_100kb_tamp_start, enwik8_100kb_tamp_end - enwik8_100kb_tamp_start)){
-            printf("Unexpected compressed data.");
+        size_t expected_size = enwik8_100kb_tamp_end - enwik8_100kb_tamp_start;
+        if(output_written_size != expected_size || memcmp(compressed_buffer, enwik8_100kb_tamp_start, expected_size)){
+            printf("Unexpected compressed data. ");
+            if(output_written_size != expected_size){
+                printf("Size mismatch: expected %zu, got %zu. ", expected_size, output_written_size);
+            }
+            size_t min_size = expected_size < output_written_size ? expected_size : output_written_size;
+            for(size_t i = 0; i < min_size; i++){
+                if(compressed_buffer[i] != enwik8_100kb_tamp_start[i]){
+                    printf("First difference at position %zu: expected 0x%02x, got 0x%02x\n",
+                           i, enwik8_100kb_tamp_start[i], compressed_buffer[i]);
+                    break;
+                }
+            }
         }
         else{
             printf("Compressed to expected tamp data.\n");
         }
     }
     {
-        /* DECOMPRESSION */
+        /* DECOMPRESSION OF KNOWN GOOD COMPRESSED DATA */
+        memset(decompressed_buffer, 0, sizeof(decompressed_buffer));
         size_t input_consumed_size, output_written_size;
         TampDecompressor decompressor;
         tamp_decompressor_init(&decompressor, NULL, window_buffer);
         start = esp_timer_get_time();
         tamp_decompressor_decompress(
                 &decompressor,
-                output_buffer,
-                sizeof(output_buffer),
+                decompressed_buffer,
+                sizeof(decompressed_buffer),
                 &output_written_size,
                 enwik8_100kb_tamp_start,
                 100000,
                 &input_consumed_size
                 );
         end = esp_timer_get_time();
+        printf("\nDecompression of known good data:\n");
         printf("Decompression Time (uS): %lld\n", end - start);
         printf("Decompression Size (bytes): %zu\n", output_written_size);
 
-        if(memcmp(output_buffer, enwik8_100kb_start, 100000)){
-            printf("Unexpected decompressed data.");
+        if(memcmp(decompressed_buffer, enwik8_100kb_start, 100000)){
+            printf("Unexpected decompressed data.\n");
         }
         else{
             printf("Decompression successful.\n");
+        }
+    }
+    {
+        /* DECOMPRESSION OF OUR COMPRESSED DATA */
+        memset(decompressed_buffer, 0, sizeof(decompressed_buffer));
+        size_t input_consumed_size, output_written_size;
+        TampDecompressor decompressor;
+        tamp_decompressor_init(&decompressor, NULL, window_buffer);
+        start = esp_timer_get_time();
+        tamp_decompressor_decompress(
+                &decompressor,
+                decompressed_buffer,
+                sizeof(decompressed_buffer),
+                &output_written_size,
+                compressed_buffer,
+                compressed_size,
+                &input_consumed_size
+                );
+        end = esp_timer_get_time();
+        printf("\nDecompression of our compressed data:\n");
+        printf("Decompression Time (uS): %lld\n", end - start);
+        printf("Decompression Size (bytes): %zu\n", output_written_size);
+        printf("Input consumed: %zu\n", input_consumed_size);
+
+        if(output_written_size != 100000 || memcmp(decompressed_buffer, enwik8_100kb_start, 100000)){
+            printf("Round-trip compression/decompression failed. ");
+            if(output_written_size != 100000){
+                printf("Size mismatch: expected 100000, got %zu. ", output_written_size);
+            }
+            size_t min_size = output_written_size < 100000 ? output_written_size : 100000;
+            for(size_t i = 0; i < min_size; i++){
+                if(decompressed_buffer[i] != enwik8_100kb_start[i]){
+                    printf("First difference at position %zu: expected 0x%02x, got 0x%02x\n",
+                           i, enwik8_100kb_start[i], decompressed_buffer[i]);
+                    break;
+                }
+            }
+        }
+        else{
+            printf("Round-trip compression/decompression successful.\n");
         }
     }
 
