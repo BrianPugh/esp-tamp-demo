@@ -26,7 +26,7 @@ extern const uint8_t enwik8_100kb_tamp_end[]   asm("_binary_enwik8_100kb_tamp_en
 #define WINDOW_BITS 10
 
 uint8_t window_buffer[1 << WINDOW_BITS];
-uint8_t compressed_buffer[100000];
+uint8_t compressed_buffer[70000];
 uint8_t decompressed_buffer[100000];
 
 void app_main(void)
@@ -112,7 +112,7 @@ void app_main(void)
                 sizeof(decompressed_buffer),
                 &output_written_size,
                 enwik8_100kb_tamp_start,
-                100000,
+                enwik8_100kb_tamp_end - enwik8_100kb_tamp_start,
                 &input_consumed_size
                 );
         end = esp_timer_get_time();
