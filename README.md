@@ -16,8 +16,8 @@ This will compress the first 100KB of the enwik8 dataset and print the compressi
 
 All benchmarks were performed with:
 
-* Tamp v1.10.0
-* esp-idf v5.4
+* Tamp v2.3.0
+* esp-idf v6.0.2
 * ESP32 hardware with default settings. Notably:
   * 160 MHz
   * DIO 2MB flash at 40MHz
@@ -30,14 +30,14 @@ With a 10bit window, the 100,000 byte file compresses to 51637 bytes.
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 4.461    | Baseline          |
-| ESP32-Optimized | 1.756    | 2.54x             |
+| Default         | 2.336    | Baseline          |
+| ESP32-Optimized | 1.778    | 1.31x             |
 
 ### Decompression
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 0.093    | Baseline          |
+| Default         | 0.086    | Baseline          |
 
 # Local Development
 

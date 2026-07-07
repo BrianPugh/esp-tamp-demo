@@ -8,3 +8,4 @@ tamp.mpy
 dependencies.lock
 test.py
 /managed_components/
+/components
