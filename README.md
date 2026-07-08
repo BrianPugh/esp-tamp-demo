@@ -21,6 +21,7 @@ All benchmarks were performed with:
 * ESP32 hardware with default settings. Notably:
   * 160 MHz
   * DIO 2MB flash at 40MHz
+* Compiler set to `-O2` (`COMPILER_OPTIMIZATION_PERF=y`)
 
 The esp-optimizations can be enabled by running `idf.py config` and enabling/disabling `TAMP_ESP32`.
 
@@ -30,14 +31,15 @@ With a 10bit window, the 100,000 byte file compresses to 51637 bytes.
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 2.336    | Baseline          |
-| ESP32-Optimized | 1.778    | 1.31x             |
+| Default         | 1.756    | Baseline          |
+| ESP32-Optimized | 1.708    | 1.03x             |
 
 ### Decompression
 
 |                 | Time (s) | Performance Boost |
 |-----------------|----------|-------------------|
-| Default         | 0.086    | Baseline          |
+| Default         | 0.068    | Baseline          |
+| ESP32-Optimized         | 0.060    | 1.13x          |
 
 # Local Development
 
