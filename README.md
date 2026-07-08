@@ -14,32 +14,36 @@ This will compress the first 100KB of the enwik8 dataset and print the compressi
 
 # Performance
 
-All benchmarks were performed with:
+All benchmarks were performed on two hardware targets:
+
+* ESP32 (Xtensa LX6)
+* ESP32-S3 (Xtensa LX7)
+
+Both targets used identical settings:
 
 * Tamp v2.3.0
 * esp-idf v6.0.2
-* ESP32 hardware with default settings. Notably:
-  * 160 MHz
-  * DIO 2MB flash at 40MHz
+* CPU at 160 MHz
+* DIO 2MB flash at 80MHz
 * Compiler set to `-O2` (`COMPILER_OPTIMIZATION_PERF=y`)
 
-The esp-optimizations can be enabled by running `idf.py config` and enabling/disabling `TAMP_ESP32`.
+The esp-optimizations can be enabled by running `idf.py config` and enabling/disabling `TAMP_ESP32`. Note that the impact of these optimizations differs substantially between targets: the ESP32-S3-specific code path uses the LX7's SIMD (PIE) vector instructions to search 16 bytes at a time, while the ESP32 falls back to hand-tuned scalar assembly. This is why the ESP32-S3 sees a much larger compression speedup than the ESP32.
 
 ### Compression
 
 With a 10bit window, the 100,000 byte file compresses to 51637 bytes.
 
-|                 | Time (s) | Performance Boost |
-|-----------------|----------|-------------------|
-| Default         | 1.756    | Baseline          |
-| ESP32-Optimized | 1.708    | 1.03x             |
+|                 | ESP32           | ESP32-S3        |
+|-----------------|-----------------|-----------------|
+| Default         | 1.756 s         | 1.487 s         |
+| ESP32-Optimized | 1.708 s (1.03x) | 0.254 s (5.85x) |
 
 ### Decompression
 
-|                 | Time (s) | Performance Boost |
-|-----------------|----------|-------------------|
-| Default         | 0.068    | Baseline          |
-| ESP32-Optimized         | 0.060    | 1.13x          |
+|                 | ESP32           | ESP32-S3        |
+|-----------------|-----------------|-----------------|
+| Default         | 0.068 s         | 0.053 s         |
+| ESP32-Optimized | 0.060 s (1.13x) | 0.050 s (1.06x) |
 
 # Local Development
 
