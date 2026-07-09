@@ -3,4 +3,4 @@ dependencies:
   ## Required IDF version
   idf:
     version: ">=4.1.0"
-  brianpugh/tamp: "~1.5.0"
+  brianpugh/tamp: "~2.3.0"

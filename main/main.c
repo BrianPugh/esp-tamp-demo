@@ -26,7 +26,7 @@ extern const uint8_t enwik8_100kb_tamp_end[]   asm("_binary_enwik8_100kb_tamp_en
 #define WINDOW_BITS 10
 
 uint8_t window_buffer[1 << WINDOW_BITS];
-uint8_t compressed_buffer[70000];
+uint8_t compressed_buffer[60000];
 uint8_t decompressed_buffer[100000];
 
 void app_main(void)
@@ -54,6 +54,11 @@ void app_main(void)
         printf("%" PRIu32 "MB %s flash\n", flash_size / (uint32_t)(1024 * 1024),
                (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
         printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+#ifdef CONFIG_TAMP_ESP32
+        printf("Tamp ESP32 optimizations: enabled\n");
+#else
+        printf("Tamp ESP32 optimizations: disabled\n");
+#endif
     }
     size_t compressed_size;
     {
@@ -104,7 +109,7 @@ void app_main(void)
         memset(decompressed_buffer, 0, sizeof(decompressed_buffer));
         size_t input_consumed_size, output_written_size;
         TampDecompressor decompressor;
-        tamp_decompressor_init(&decompressor, NULL, window_buffer);
+        tamp_decompressor_init(&decompressor, NULL, window_buffer, WINDOW_BITS);
         start = esp_timer_get_time();
         tamp_decompressor_decompress(
                 &decompressor,
@@ -132,7 +137,7 @@ void app_main(void)
         memset(decompressed_buffer, 0, sizeof(decompressed_buffer));
         size_t input_consumed_size, output_written_size;
         TampDecompressor decompressor;
-        tamp_decompressor_init(&decompressor, NULL, window_buffer);
+        tamp_decompressor_init(&decompressor, NULL, window_buffer, WINDOW_BITS);
         start = esp_timer_get_time();
         tamp_decompressor_decompress(
                 &decompressor,
@@ -167,7 +172,70 @@ void app_main(void)
             printf("Round-trip compression/decompression successful.\n");
         }
     }
+    {
+        /* REPETITIVE DATA (long/extended matches dominate) */
+        const size_t repetitive_size = sizeof(decompressed_buffer);
 
+        /* Generate the synthetic pattern in-place; no dedicated buffer needed. */
+        #define REPETITIVE_BYTE(i) ((i) % 257 == 0 ? '!' : (uint8_t)('A' + ((i) % 61)))
+        for (size_t i = 0; i < repetitive_size; i++) {
+            decompressed_buffer[i] = REPETITIVE_BYTE(i);
+        }
+
+        size_t input_consumed_size, output_written_size;
+        TampCompressor compressor;
+        TampConf conf = {
+            .window = WINDOW_BITS,
+            .literal = 8,
+            .use_custom_dictionary = false
+        };
+        tamp_compressor_init(&compressor, &conf, window_buffer);
+        start = esp_timer_get_time();
+        tamp_compressor_compress_and_flush(
+             &compressor,
+             compressed_buffer, sizeof(compressed_buffer), &output_written_size,
+             decompressed_buffer, repetitive_size, &input_consumed_size,
+             false
+        );
+        end = esp_timer_get_time();
+        printf("\nRepetitive data:\n");
+        printf("Compression Time (uS): %lld\n", end - start);
+        printf("Compression Size (bytes): %zu\n", output_written_size);
+
+        size_t comp_size = output_written_size;
+        /* Decompress back into the same buffer we compressed from, then verify
+         * against the deterministic pattern regenerated on the fly. */
+        memset(decompressed_buffer, 0, sizeof(decompressed_buffer));
+        TampDecompressor decompressor;
+        tamp_decompressor_init(&decompressor, NULL, window_buffer, WINDOW_BITS);
+        start = esp_timer_get_time();
+        tamp_decompressor_decompress(
+                &decompressor,
+                decompressed_buffer,
+                sizeof(decompressed_buffer),
+                &output_written_size,
+                compressed_buffer,
+                comp_size,
+                &input_consumed_size
+                );
+        end = esp_timer_get_time();
+        printf("Decompression Time (uS): %lld\n", end - start);
+        printf("Decompression Size (bytes): %zu\n", output_written_size);
+
+        bool repetitive_ok = (output_written_size == repetitive_size);
+        for (size_t i = 0; repetitive_ok && i < repetitive_size; i++) {
+            if (decompressed_buffer[i] != REPETITIVE_BYTE(i)) {
+                repetitive_ok = false;
+            }
+        }
+        if (repetitive_ok) {
+            printf("Repetitive round-trip successful.\n");
+        }
+        else {
+            printf("Repetitive round-trip FAILED.\n");
+        }
+        #undef REPETITIVE_BYTE
+    }
 
     for (int i = 5; i >= 0; i--) {
         printf("Restarting in %d seconds...\n", i);
