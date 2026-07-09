@@ -54,6 +54,11 @@ void app_main(void)
         printf("%" PRIu32 "MB %s flash\n", flash_size / (uint32_t)(1024 * 1024),
                (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
         printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+#ifdef CONFIG_TAMP_ESP32
+        printf("Tamp ESP32 optimizations: enabled\n");
+#else
+        printf("Tamp ESP32 optimizations: disabled\n");
+#endif
     }
     size_t compressed_size;
     {
